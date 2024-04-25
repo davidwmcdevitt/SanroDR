@@ -115,7 +115,8 @@ class Trainer:
             os.makedirs('outputs')
         
         self.labels_db = pd.read_csv(self.ratings_path)
-        
+        self.labels_db = self.labels_db[self.labels_db['path'].apply(lambda x: os.path.isfile(os.path.join(self.images_dir, x)))]
+
         if self.force_balance:
             
             balanced_sample = self.labels_db[self.labels_db['rating'] != 0]
@@ -161,7 +162,7 @@ class Trainer:
         
         if self.class_weights:
             
-            self.class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(self.train_data.ratings), y=self.train_data.ratings)
+            self.class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(self.train_ratings), y=self.train_ratings)
             self.class_weights = torch.tensor(self.class_weights, dtype=torch.float).to(self.device)
             
             print(f'Class weights: {self.class_weights}')

@@ -37,7 +37,10 @@ def parse_args():
 
 class ScanDataset(Dataset):
     
-    def __init__(self, images, ratings, transform=None):
+    def __init__(self, data_dir, images, ratings, transform=None):
+        
+        self.data_dir = data_dir
+        
         self.images = images
         self.ratings = ratings
         self.transform = transform
@@ -49,7 +52,7 @@ class ScanDataset(Dataset):
     def __getitem__(self, idx):
 
         try:
-          img_path = self.images[idx]
+          img_path = os.path.join(self.data_dir, self.images[idx])
           img = Image.open(img_path)
           img_transformed = self.transform(img)
 
@@ -79,7 +82,7 @@ class Trainer:
         self.num_epochs = args.num_epochs
         
         self.oversample = args.oversample
-        self.class_weights = args.class_weights
+        self.weight_classes = args.class_weights
         self.force_balance = args.force_balance
         
         if args.state_dict:
@@ -151,8 +154,8 @@ class Trainer:
             
             self.train_images = [self.train_images[i] for i in resampled_indices]
             
-        self.train_data = ScanDataset(self.train_images, self.train_images, transform=self.train_transforms)
-        self.val_data = ScanDataset(self.val_images, self.val_ratings, transform=self.val_transforms)
+        self.train_data = ScanDataset(self.data_dir, self.train_images, self.train_ratings, transform=self.train_transforms)
+        self.val_data = ScanDataset(self.data_dir, self.val_images, self.val_ratings, transform=self.val_transforms)
         
         self.train_loader = DataLoader(dataset = self.train_data, batch_size=self.batch_size, shuffle=True, num_workers=self.num_workers)
         self.val_loader = DataLoader(dataset = self.val_data, batch_size=self.batch_size, shuffle=False, num_workers=self.num_workers)
@@ -161,7 +164,7 @@ class Trainer:
         
         print(f'{len(self.val_data)} validation images found, {len(self.val_loader)} batchs per epoch.')
         
-        if self.class_weights:
+        if self.weight_classes:
             
             self.class_weights = compute_class_weight(class_weight='balanced', classes=np.unique(self.train_ratings), y=self.train_ratings)
             self.class_weights = torch.tensor(self.class_weights, dtype=torch.float).to(self.device)
@@ -180,7 +183,7 @@ class Trainer:
         else:
             
             model_path = 'Sanro_' + datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-            print(f'Building model {self.model_path}')
+            print(f'Building model {model_path}')
             
             experiment_path = os.path.join('experiments', model_path)
             logs_path = os.path.join(experiment_path,'logs')
@@ -197,7 +200,7 @@ class Trainer:
             best_val_accuracy = 0.0
             start_epoch = 0
 
-        if self.class_weights:
+        if self.weight_classes:
             
             criterion = nn.CrossEntropyLoss(weight=self.class_weights)
             
@@ -218,6 +221,8 @@ class Trainer:
             self.model.train()  
 
             for data, label in tqdm(self.train_loader):
+                print(label)
+                print(type(label))
                 data, label = data.to(self.device), label.to(self.device)
         
                 optimizer.zero_grad()
@@ -242,7 +247,7 @@ class Trainer:
                 val_true = []
                 val_preds = []
         
-                for data, label in self.val_loader:
+                for data, label in tqdm(self.val_loader):
                     data, label = data.to(self.device), label.to(self.device)
         
                     val_output = self.model(data)

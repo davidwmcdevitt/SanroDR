@@ -27,9 +27,7 @@ def parse_args():
 
 class ScanDataset(Dataset):
     
-    def __init__(self, data_dir, images, ratings, transform=None):
-        
-        self.data_dir = data_dir
+    def __init__(self, images, ratings, transform=None):
         
         self.images = images
         self.ratings = ratings
@@ -40,21 +38,13 @@ class ScanDataset(Dataset):
         return self.length
 
     def __getitem__(self, idx):
+      
+        img_path = os.path.join(self.images[idx])
+        img = Image.open(img_path)
+        img_transformed = self.transform(img)
 
-        try:
-          img_path = os.path.join(self.data_dir, self.images[idx])
-          img = Image.open(img_path)
-          img_transformed = self.transform(img)
-
-          label = self.ratings[idx]
-
-        except:
-          img_path = self.images[0]
-          img = Image.open(img_path)
-          img_transformed = self.transform(img)
-
-          label = self.ratings[0]
-
+        label = self.ratings[idx]
+        
         return img_transformed, label
 
 
@@ -100,7 +90,23 @@ class Evaluator:
             
             self.ratings = self.ratings['rating'].tolist()
             
-        self.test_data = ScanDataset(self.data_dir, self.images, self.ratings, transform=self.test_transforms)
+        if self.eval_set == 'messidor2':
+                
+            self.images_dir = os.path.join(self.data_dir, 'messidor-2/messidor-2/preprocess')
+            self.ratings_path = os.path.join(self.data_dir, 'messidor_data.csv')
+            
+            self.labels_db = pd.read_csv(self.ratings_path)
+            self.labels_db = self.labels_db[self.labels_db['id_code'].apply(lambda x: os.path.isfile(os.path.join(self.images_dir, x)))]
+                
+            self.images = [os.path.join(self.images_dir, item) for item in os.listdir(self.images_dir)]
+            
+            self.ratings = self.labels_db[self.labels_db['id_code'].isin([item for item in os.listdir(self.images_dir)])]
+            
+            self.ratings = self.ratings['diagnosis'].tolist()
+
+                
+        self.test_data = ScanDataset(self.images, self.ratings, transform=self.test_transforms)
+            
         self.test_loader = DataLoader(dataset = self.test_data, batch_size=self.batch_size, shuffle=False)
         
         print(f'{len(self.test_data)} test images found, {len(self.test_loader)} batchs per epoch.')
@@ -130,8 +136,8 @@ class Evaluator:
             test_true = np.array(test_true)
             test_preds = np.array(test_preds)
             
-            np.save(os.path.join('outputs', f'{self.eval_set}_test_true.npy'))
-            np.save(os.path.join('outputs', f'{self.eval_set}_test_preds.npy'))
+            np.save(os.path.join('outputs', f'{self.eval_set}_test_true.npy'), test_true)
+            np.save(os.path.join('outputs', f'{self.eval_set}_test_preds.npy'), test_preds)
             
             accuracy = accuracy_score(test_true, test_preds)
             precision = precision_score(test_true, test_preds, average='macro')  # 'macro' can be changed based on needs

@@ -5,6 +5,14 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 import torch
 import pandas as pd
+import torch.nn as nn
+from tqdm import tqdm
+import timm
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
 
 def parse_args():
     
@@ -65,6 +73,17 @@ class Evaluator:
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_workers = torch.cuda.device_count()
         
+        self.model = timm.create_model('vit_base_patch16_384', pretrained=False, num_classes=5)
+        self.state_dict = torch.load(args.model_dict)
+        
+        self.model.load_state_dict(self.state_dict)
+        
+        self.model = self.model.to(self.device)
+        
+        self.model.eval()
+        
+        print(f'Model {args.model_dict} successfully loaded.')
+        
         if args.eval_set == 'kaggle':
                 
             self.images_dir = os.path.join(self.data_dir, 'images')
@@ -83,3 +102,47 @@ class Evaluator:
         self.test_loader = DataLoader(dataset = self.val_data, batch_size=self.batch_size, shuffle=False)
         
         print(f'{len(self.test_data)} test images found, {len(self.test_loader)} batchs per epoch.')
+        criterion = nn.CrossEntropyLoss()
+        
+        with torch.no_grad():
+            test_true = []
+            test_preds = []
+            
+            test_loss = 0.0
+            
+            for data, label in tqdm(self.test_loader):
+                data, label = data.to(self.device), label.to(self.device)
+            
+                output = self.model(data)
+                loss = criterion(output, label)
+                pred = output.argmax(dim=1, keepdim=True)
+            
+                test_true.extend(label.cpu().numpy())
+                test_preds.extend(pred.cpu().numpy())
+                
+                test_loss += loss.item() / len(self.test_loader)
+                
+            test_true = np.array(test_true)
+            test_preds = np.array(test_preds)
+            
+            # Calculate metrics
+            accuracy = accuracy_score(test_true, test_preds)
+            precision = precision_score(test_true, test_preds, average='macro')  # 'macro' can be changed based on needs
+            recall = recall_score(test_true, test_preds, average='macro')  # 'macro' can be changed based on needs
+            f1 = f1_score(test_true, test_preds, average='macro')  # 'macro' can be changed based on needs
+            conf_matrix = confusion_matrix(test_true, test_preds)
+            
+            # Print metrics
+            print(f'Accuracy: {accuracy:.4f}')
+            print(f'Precision: {precision:.4f}')
+            print(f'Recall: {recall:.4f}')
+            print(f'F1 Score: {f1:.4f}')
+            
+            plt.figure(figsize=(10, 7))
+            sns.heatmap(conf_matrix, annot=True, fmt='g', cmap='Blues', cbar=False)
+            plt.xlabel('Predicted labels')
+            plt.ylabel('True labels')
+            plt.title('Confusion Matrix')
+            plt.show()
+
+

@@ -63,6 +63,7 @@ class Evaluator:
     def __init__(self, args):
         
         self.data_dir = args.data_dir
+        self.eval_set = args.eval_set
         
         self.test_transforms = transforms.Compose([
             transforms.Resize((384, 384)),
@@ -72,6 +73,7 @@ class Evaluator:
         
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_workers = torch.cuda.device_count()
+        self.batch_size = 16
         
         self.model = timm.create_model('vit_base_patch16_384', pretrained=False, num_classes=5)
         self.state_dict = torch.load(args.model_dict)
@@ -84,7 +86,7 @@ class Evaluator:
         
         print(f'Model {args.model_dict} successfully loaded.')
         
-        if args.eval_set == 'kaggle':
+        if self.eval_set == 'kaggle':
                 
             self.images_dir = os.path.join(self.data_dir, 'images')
             self.ratings_path = os.path.join(self.data_dir, 'labels.csv')
@@ -99,9 +101,12 @@ class Evaluator:
             self.ratings = self.ratings['rating'].tolist()
             
         self.test_data = ScanDataset(self.data_dir, self.images, self.ratings, transform=self.test_transforms)
-        self.test_loader = DataLoader(dataset = self.val_data, batch_size=self.batch_size, shuffle=False)
+        self.test_loader = DataLoader(dataset = self.test_data, batch_size=self.batch_size, shuffle=False)
         
         print(f'{len(self.test_data)} test images found, {len(self.test_loader)} batchs per epoch.')
+        
+    def evaluate(self):
+        
         criterion = nn.CrossEntropyLoss()
         
         with torch.no_grad():
@@ -125,14 +130,15 @@ class Evaluator:
             test_true = np.array(test_true)
             test_preds = np.array(test_preds)
             
-            # Calculate metrics
+            np.save(os.path.join('outputs', f'{self.eval_set}_test_true.npy'))
+            np.save(os.path.join('outputs', f'{self.eval_set}_test_preds.npy'))
+            
             accuracy = accuracy_score(test_true, test_preds)
             precision = precision_score(test_true, test_preds, average='macro')  # 'macro' can be changed based on needs
             recall = recall_score(test_true, test_preds, average='macro')  # 'macro' can be changed based on needs
             f1 = f1_score(test_true, test_preds, average='macro')  # 'macro' can be changed based on needs
             conf_matrix = confusion_matrix(test_true, test_preds)
             
-            # Print metrics
             print(f'Accuracy: {accuracy:.4f}')
             print(f'Precision: {precision:.4f}')
             print(f'Recall: {recall:.4f}')
@@ -143,6 +149,14 @@ class Evaluator:
             plt.xlabel('Predicted labels')
             plt.ylabel('True labels')
             plt.title('Confusion Matrix')
-            plt.show()
+            cm_path = os.path.join('outputs', f'{self.eval_set}_confusion_matrix.png')
+            plt.savefig(cm_path)
+            print(f'Confusion Matrix saved at {cm_path}')
 
-
+if __name__ == "__main__":
+    
+    args = parse_args()
+    
+    sanro = Evaluator(args)
+    
+    sanro.evaluate()

@@ -109,6 +109,11 @@ class Trainer:
         
     def load_data(self):
         
+        if not os.path.exists('experiments'):
+            os.makedirs('experiments')
+        if not os.path.exists('outputs'):
+            os.makedirs('outputs')
+        
         self.labels_db = pd.read_csv(self.ratings_path)
         
         if self.force_balance:

@@ -8,12 +8,10 @@ from datetime import datetime
 from PIL import Image
 import torch
 from torch.utils.data import DataLoader, Dataset
-from torchvision import datasets, transforms
+from torchvision import transforms
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix
 from sklearn.utils.class_weight import compute_class_weight
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.optim.lr_scheduler import StepLR
 from tqdm import tqdm
@@ -117,6 +115,8 @@ class Trainer:
             os.makedirs('experiments')
         if not os.path.exists('outputs'):
             os.makedirs('outputs')
+        if not os.path.exists('test'):
+            os.makedirs('test')
         
         self.labels_db = pd.read_csv(self.ratings_path)
         self.labels_db = self.labels_db[self.labels_db['path'].apply(lambda x: os.path.isfile(os.path.join(self.data_dir, x)))]
@@ -179,6 +179,8 @@ class Trainer:
         if self.continue_train:
             print(f'Loading state dictionary from {self.state_dict}')
             experiment_path = os.path.join('experiments', self.state_dict)
+            state_dict = torch.load('/content/drive/MyDrive/Job Search/Sanro Case/Model/best_model_14.pth')
+
             
         else:
             
@@ -221,8 +223,6 @@ class Trainer:
             self.model.train()  
 
             for data, label in tqdm(self.train_loader):
-                print(label)
-                print(type(label))
                 data, label = data.to(self.device), label.to(self.device)
         
                 optimizer.zero_grad()

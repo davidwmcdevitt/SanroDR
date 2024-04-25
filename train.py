@@ -25,8 +25,7 @@ def parse_args():
     
     parser = argparse.ArgumentParser(description='Sanro Health Training Script')
     
-    parser.add_argument('--images_dir', type=str, required=True, help='Image Directory')
-    parser.add_argument('--ratings_path', type=str, required=True, help='Ratings File')
+    parser.add_argument('--data_dir', type=str, required=True, help='Data Directory')
     parser.add_argument('--num_epochs', type=int, required=False, default=25, help='Number of Epochs')
     parser.add_argument('--oversample', action='store_true', required=False, default=False, help='Oversample Minority Classes')
     parser.add_argument('--class_weights', action='store_true', required=False, default=False, help='Include class weights')
@@ -70,8 +69,8 @@ class Trainer:
     
     def __init__(self, args):
         
-        self.images_dir = args.images_dir
-        self.ratings_path = args.rating_path
+        self.images_dir = os.path.join(args.data_dir, 'images')
+        self.ratings_path = os.path.join(args.data_dir, 'labels.csv')
         
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_workers = torch.cuda.device_count()
@@ -280,4 +279,4 @@ if __name__ == "__main__":
     
     sanro.load_data()
     
-    sanro.train()
+    #sanro.train()

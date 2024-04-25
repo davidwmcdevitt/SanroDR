@@ -86,7 +86,7 @@ class Evaluator:
                 
             self.images = [os.path.join(self.images_dir, item) for item in os.listdir(self.images_dir)]
             
-            self.ratings = self.labels_db[self.labels_db['path'].isin([os.path.join('images', item) for item in os.listdir(self.images_dir)])]
+            self.ratings = self.labels_db[self.labels_db['path'].isin(['images/' + item for item in os.listdir(self.images_dir)])]
             
             self.ratings = self.ratings['rating'].tolist()
             

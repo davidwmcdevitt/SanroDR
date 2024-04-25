@@ -25,7 +25,7 @@ def parse_args():
     
     parser = argparse.ArgumentParser(description='Sanro Health Training Script')
     
-    parser.add_argument('--data_dir', type=str, required=True, help='Data Directory')
+    parser.add_argument('--data_dir', type=str, required=False, default='data', help='Data Directory')
     parser.add_argument('--num_epochs', type=int, required=False, default=25, help='Number of Epochs')
     parser.add_argument('--oversample', action='store_true', required=False, default=False, help='Oversample Minority Classes')
     parser.add_argument('--class_weights', action='store_true', required=False, default=False, help='Include class weights')

@@ -179,7 +179,6 @@ class Trainer:
         if self.continue_train:
             print(f'Loading state dictionary from {self.state_dict}')
             experiment_path = os.path.join('experiments', self.state_dict)
-            state_dict = torch.load('/content/drive/MyDrive/Job Search/Sanro Case/Model/best_model_14.pth')
 
             
         else:

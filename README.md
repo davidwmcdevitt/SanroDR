@@ -32,7 +32,7 @@ python train.py [OPTIONS]
 ```bash
 python eval.py [OPTIONS]
 
---eval_set : Specifies the dataset to be used for evaluation. Must be one of 'kaggle' or 'messidor2'.
+--eval_set : Specifies the dataset to be used for evaluation: ['kaggle' or 'messidor2']
 --model_dict : Path to the model state dictionary file that you want to evaluate. 
 --data_dir : The directory where the evaluation data is stored.
 ```

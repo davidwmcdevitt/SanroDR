@@ -286,4 +286,4 @@ if __name__ == "__main__":
     
     sanro.load_data()
     
-    #sanro.train()
+    sanro.train()

@@ -69,8 +69,9 @@ class Trainer:
     
     def __init__(self, args):
         
-        self.images_dir = os.path.join(args.data_dir, 'images')
-        self.ratings_path = os.path.join(args.data_dir, 'labels.csv')
+        self.data_dir = args.data_dir
+        self.images_dir = os.path.join(self.data_dir, 'images')
+        self.ratings_path = os.path.join(self.data_dir, 'labels.csv')
         
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         self.num_workers = torch.cuda.device_count()
@@ -115,7 +116,7 @@ class Trainer:
             os.makedirs('outputs')
         
         self.labels_db = pd.read_csv(self.ratings_path)
-        self.labels_db = self.labels_db[self.labels_db['path'].apply(lambda x: os.path.isfile(os.path.join(self.images_dir, x)))]
+        self.labels_db = self.labels_db[self.labels_db['path'].apply(lambda x: os.path.isfile(os.path.join(self.data_dir, x)))]
 
         if self.force_balance:
             
